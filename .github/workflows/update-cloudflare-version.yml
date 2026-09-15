@@ -1,0 +1,64 @@
+name: Update Cloudflare version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version written to latest.json
+        required: true
+        default: 0.0.0
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  update-version:
+    name: Write and verify version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate version
+        env:
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must match MAJOR.MINOR.PATCH; received: $VERSION" >&2
+            exit 1
+          fi
+
+      - name: Update Workers KV
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_KV_NAMESPACE_ID: ${{ vars.CLOUDFLARE_KV_NAMESPACE_ID }}
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest="$(jq -cn --arg version "$VERSION" '{version: $version}')"
+          curl --fail-with-body --silent --show-error \
+            --request PUT \
+            --url "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE_ID}/values/latest" \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            --header "Content-Type: application/json" \
+            --data "$manifest"
+
+      - name: Verify public endpoint
+        env:
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoint='https://notepadpp-dlms-update-api.ikjx.workers.dev/latest.json'
+          for attempt in {1..12}; do
+            actual="$(curl --fail --silent --show-error "$endpoint" | jq -r '.version')"
+            if [[ "$actual" == "$VERSION" ]]; then
+              echo "Verified $endpoint returns version $VERSION."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Endpoint did not return version $VERSION within 60 seconds." >&2
+          exit 1
