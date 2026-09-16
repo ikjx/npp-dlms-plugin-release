@@ -4,50 +4,88 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Version written to latest.json
+        description: Version (0.0.0, v0.0.0, or V0.0.0)
         required: true
         default: 0.0.0
         type: string
+  release:
+    types: [published]
 
 permissions:
   contents: read
+
+concurrency:
+  group: update-cloudflare-version
+  cancel-in-progress: false
 
 jobs:
   update-version:
     name: Write and verify version
     runs-on: ubuntu-latest
     steps:
-      - name: Validate version
+      - name: Resolve and validate version
+        id: version
         env:
-          VERSION: ${{ inputs.version }}
+          EVENT_NAME: ${{ github.event_name }}
+          MANUAL_VERSION: ${{ inputs.version }}
+          RELEASE_ASSETS: ${{ toJson(github.event.release.assets) }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Version must match MAJOR.MINOR.PATCH; received: $VERSION" >&2
+
+          if [[ "$EVENT_NAME" == "release" ]]; then
+            raw_version="$RELEASE_TAG"
+            asset_count="$(jq 'length' <<< "$RELEASE_ASSETS")"
+            if [[ "$asset_count" -lt 1 ]]; then
+              echo "Published release must contain at least one uploaded asset." >&2
+              exit 1
+            fi
+          else
+            raw_version="$MANUAL_VERSION"
+          fi
+
+          if [[ "$raw_version" =~ ^[vV]?([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            version="${BASH_REMATCH[1]}"
+          else
+            echo "Version must be MAJOR.MINOR.PATCH with an optional v or V prefix; received: $raw_version" >&2
             exit 1
           fi
+
+          if [[ "$EVENT_NAME" == "release" && ! "$raw_version" =~ ^[vV] ]]; then
+            echo "Release tag must start with v or V; received: $raw_version" >&2
+            exit 1
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $version"
 
       - name: Update Workers KV
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_KV_NAMESPACE_ID: ${{ vars.CLOUDFLARE_KV_NAMESPACE_ID }}
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
+
+          : "${CLOUDFLARE_ACCOUNT_ID:?Missing CLOUDFLARE_ACCOUNT_ID variable}"
+          : "${CLOUDFLARE_API_TOKEN:?Missing CLOUDFLARE_API_TOKEN secret}"
+          : "${CLOUDFLARE_KV_NAMESPACE_ID:?Missing CLOUDFLARE_KV_NAMESPACE_ID variable}"
+
           manifest="$(jq -cn --arg version "$VERSION" '{version: $version}')"
-          curl --fail-with-body --silent --show-error \
+          response="$(curl --fail-with-body --silent --show-error \
             --request PUT \
             --url "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE_ID}/values/latest" \
             --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             --header "Content-Type: application/json" \
-            --data "$manifest"
+            --data "$manifest")"
+          jq -e '.success == true' <<< "$response" > /dev/null
 
       - name: Verify public endpoint
         env:
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
