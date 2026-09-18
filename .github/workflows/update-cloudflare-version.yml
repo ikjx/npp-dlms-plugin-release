@@ -46,6 +46,11 @@ jobs:
             exit 1
           fi
 
+          if [[ "$EVENT_NAME" == "release" && ! "$raw_version" =~ ^[vV] ]]; then
+            echo "Release tag must start with v or V; received: $raw_version" >&2
+            exit 1
+          fi
+
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Resolved version: $version"
 
