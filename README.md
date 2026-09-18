@@ -61,15 +61,15 @@ TIP: 插件目录应保持以下结构：`<安装目录>\plugins\DlmsParser\Dlms
   <sub>图 2　点击 Pt 图标打开解析面板</sub>
 </p>
 
-### 模式 1：光标解析
+#### 模式 1：光标解析
 
 将鼠标光标放在需要解析的数据帧中，插件会自动解析光标所在或距离光标最近的可识别数据帧。
 
-### 模式 2：选中解析
+#### 模式 2：选中解析
 
 选中完整的数据帧，或双击选中连续的十六进制数据，插件会优先解析选中的内容。
 
-### 模式 3：输入解析
+#### 模式 3：输入解析
 
 在解析面板左上角的输入框中输入或粘贴数据帧，插件会自动解析。
 
@@ -83,9 +83,9 @@ TIP: 插件目录应保持以下结构：`<安装目录>\plugins\DlmsParser\Dlms
 
 ## 三、主要功能
 
-##### 1 解析 IEC 62056-46 HDLC 数据帧
+### 1 解析 IEC 62056-46 HDLC 数据帧
 
-##### 2 解析 IEC 62056-47 Wrapper 数据帧
+### 2 解析 IEC 62056-47 Wrapper 数据帧
 
 <p align="center">
   <img src="images/IEC 62056-47 Wrapper.png" alt="IEC 62056-47 Wrapper 解析" width="100%">
@@ -93,7 +93,7 @@ TIP: 插件目录应保持以下结构：`<安装目录>\plugins\DlmsParser\Dlms
   <sub>图 4　Wrapper 数据帧解析</sub>
 </p>
 
-##### 3 解析 Security Suite 0 加密 APDU
+### 3 解析 Security Suite 0 加密 APDU
 
 - 需配置默认 EK、AK、BK，自动向前查找全文 SystemTitle，自动完成密文解析
 
@@ -107,7 +107,7 @@ TIP: 插件目录应保持以下结构：`<安装目录>\plugins\DlmsParser\Dlms
   <sub>图 5　解密结果跟随密文显示</sub>
 </p>
 
-##### 4 ACSE APDU、xDLMS APDU 与 DLMS Data
+### 4 ACSE APDU、xDLMS APDU 与 DLMS Data
 
 <p align="center">
   <img src="images/xDLMS APDU.png" alt="xDLMS APDU 解析" width="99%">
@@ -115,7 +115,7 @@ TIP: 插件目录应保持以下结构：`<安装目录>\plugins\DlmsParser\Dlms
   <sub>图 6　xDLMS APDU 解析</sub>
 </p>
 
-##### 5 解析 IEC 62056-21 数据帧
+### 5 解析 IEC 62056-21 数据帧
 
 <p align="center">
   <img src="images/IEC 62056-21.png" alt="IEC 62056-21 解析" width="100%">
@@ -123,7 +123,7 @@ TIP: 插件目录应保持以下结构：`<安装目录>\plugins\DlmsParser\Dlms
   <sub>图 7　IEC 62056-21 数据帧解析</sub>
 </p>
 
-##### 6 解析 DL/T 645-1997/2007 数据帧
+### 6 解析 DL/T 645-1997/2007 数据帧
 
 <p align="center">
   <img src="images/DLT645.png" alt="645" width="100%">
@@ -131,7 +131,7 @@ TIP: 插件目录应保持以下结构：`<安装目录>\plugins\DlmsParser\Dlms
   <sub>图 8　DL/T 645 协议</sub>
 </p>
 
-##### 7 解析万高 HDLC 扩展帧
+### 7 解析万高 HDLC 扩展帧
 
 <p align="center">
   <img src="images/万高 扩展HDLC.png" alt="万高 HDLC 扩展帧解析" width="100%">
