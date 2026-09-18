@@ -28,6 +28,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           MANUAL_VERSION: ${{ inputs.version }}
+          RELEASE_ASSETS: ${{ toJson(github.event.release.assets) }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         shell: bash
         run: |
@@ -35,6 +36,11 @@ jobs:
 
           if [[ "$EVENT_NAME" == "release" ]]; then
             raw_version="$RELEASE_TAG"
+            asset_count="$(jq 'length' <<< "$RELEASE_ASSETS")"
+            if [[ "$asset_count" -lt 1 ]]; then
+              echo "Published release must contain at least one uploaded asset." >&2
+              exit 1
+            fi
           else
             raw_version="$MANUAL_VERSION"
           fi
